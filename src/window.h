@@ -26,7 +26,9 @@
 #define BSPWM_WINDOW_H
 
 #include <stdarg.h>
+#include <X11/Xlib-xcb.h>
 #include <xcb/xcb.h>
+#include <xcb/res.h>
 #include <xcb/xcb_event.h>
 #include <xcb/xcb_icccm.h>
 #include "types.h"
@@ -76,5 +78,9 @@ void get_atom(char *name, xcb_atom_t *atom);
 void set_atom(xcb_window_t win, xcb_atom_t atom, uint32_t value);
 void send_client_message(xcb_window_t win, xcb_atom_t property, xcb_atom_t value);
 bool window_exists(xcb_window_t win);
+pid_t getparentprocess(pid_t p);
+pid_t getnodepid(node_t *n);
+bool is_child_process(pid_t p, pid_t c);
+node_t* getparentterm(const monitor_t *m, const node_t *c);
 
 #endif

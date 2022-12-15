@@ -1425,6 +1425,7 @@ void remove_node(monitor_t *m, desktop_t *d, node_t *n)
 		return;
 	}
 
+	unswallow(m, d, n);
 	unlink_node(m, d, n);
 	history_remove(d, n, true);
 	remove_stack_node(n);
@@ -2271,6 +2272,25 @@ void regenerate_ids_in(node_t *n)
 	n->id = xcb_generate_id(dpy);
 	regenerate_ids_in(n->first_child);
 	regenerate_ids_in(n->second_child);
+}
+
+void swallow(monitor_t *m, desktop_t *d, node_t *p, node_t *c)
+{
+	if (c->noswallow)
+		return;
+
+	set_hidden(m, d, p, true);
+	c->swallowed = p;
+}
+
+void unswallow(monitor_t *m, desktop_t *d, node_t *c)
+{
+	if (c->swallowed == NULL)
+		return;
+
+	set_hidden(m, d, c->swallowed, false);
+	free(c->swallowed);
+	c->swallowed = NULL;
 }
 
 #define DEF_FLAG_COUNT(flag) \

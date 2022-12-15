@@ -245,6 +245,7 @@ struct constraints_t {
 typedef struct node_t node_t;
 struct node_t {
 	uint32_t id;
+	pid_t pid;
 	split_type_t split_type;
 	double split_ratio;
 	presel_t *presel;
@@ -256,9 +257,12 @@ struct node_t {
 	bool private;
 	bool locked;
 	bool marked;
+	bool term;
+	bool noswallow;
 	node_t *first_child;
 	node_t *second_child;
 	node_t *parent;
+	node_t *swallowed;
 	client_t *client;
 };
 
@@ -374,6 +378,8 @@ typedef struct {
 	bool manage;
 	bool focus;
 	bool border;
+	bool term;
+	bool noswallow;
 	xcb_rectangle_t *rect;
 } rule_consequence_t;
 

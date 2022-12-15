@@ -179,6 +179,12 @@ Then the insertion of *5*, with *4* as insertion point, leads to *Z*.
 
 The *spiral* automatic scheme generates window spirals that rotate clockwise (resp. anti-clockwise) if the insertion point is the first (resp. second) child of its parent.
 
+## Window Swallowing Patch
+There is a window swallowing script for bspwm, but I thought it was buggy, so it felt right to patch the feature into the WM itself.
+Windows can be marked as terminals using bspc rules: `bspc rule -a urxvt term=on`.
+Any window spawned by a child process of a terminal (unless the terminal is swallowing something itself) will "swallow" that terminal and hide it.
+When the swallowing window is closed, the swallowed terminal will become visible again.
+Certain windows can be excepted from swallowing their terminals, also using bspc rules: `bspc rule -a mpv noswallow=on`.
 
 ## Supported protocols and standards
 
@@ -186,6 +192,8 @@ The *spiral* automatic scheme generates window spirals that rotate clockwise (re
 - A subset of the EWMH and ICCCM standards.
 
 ## Community
+
+Note: This patch is made for my personal use and I guarantee no support for it!
 
 Want to get in touch with other *bspwm* users or you need help? Join us on our:
 

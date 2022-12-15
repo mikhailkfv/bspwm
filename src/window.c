@@ -138,6 +138,7 @@ bool manage_window(xcb_window_t win, rule_consequence_t *csq, int fd)
 	client_t *c = make_client();
 	c->border_width = csq->border ? d->border_width : 0;
 	n->client = c;
+	n->pid = getnodepid(n);
 	initialize_client(n);
 	initialize_floating_rectangle(n);
 
@@ -190,6 +191,8 @@ bool manage_window(xcb_window_t win, rule_consequence_t *csq, int fd)
 	set_private(m, d, n, csq->private);
 	set_locked(m, d, n, csq->locked);
 	set_marked(m, d, n, csq->marked);
+	n->term = csq->term;
+	n->noswallow = csq->noswallow;
 
 	arrange(m, d);
 
@@ -197,6 +200,12 @@ bool manage_window(xcb_window_t win, rule_consequence_t *csq, int fd)
 	xcb_change_window_attributes(dpy, win, XCB_CW_EVENT_MASK, values);
 	set_window_state(win, XCB_ICCCM_WM_STATE_NORMAL);
 	window_grab_buttons(win);
+
+	if (!n->noswallow) {
+		node_t *p = getparentterm(m, n);
+		if(p)
+			swallow(m, d, p, n);
+	}
 
 	if (d == m->desk) {
 		show_node(d, n);
@@ -993,4 +1002,71 @@ bool window_exists(xcb_window_t win)
 	}
 
 	return true;
+}
+
+pid_t getparentprocess(pid_t p)
+{
+	unsigned int v = 0;
+	FILE *f;
+	char buf[256];
+
+	snprintf(buf, sizeof(buf) - 1, "/proc/%u/stat", (unsigned)p);
+	if (!(f = fopen(buf, "r")))
+		return 0;
+
+	fscanf(f, "%*u %*s %*c %u", &v);
+	fclose(f);
+	return (pid_t)v;
+}
+
+pid_t getnodepid(node_t *n)
+{
+	static xcb_connection_t *xcon;
+	pid_t result = 0;
+	xcb_res_client_id_spec_t spec = {0};
+	spec.client = n->id;
+	spec.mask = XCB_RES_CLIENT_ID_MASK_LOCAL_CLIENT_PID;
+
+	xcb_generic_error_t *e = NULL;
+	xcb_res_query_client_ids_cookie_t c = xcb_res_query_client_ids(xcon, 1, &spec);
+	xcb_res_query_client_ids_reply_t *r = xcb_res_query_client_ids_reply(xcon, c, &e);
+
+	if (!r)
+		return (pid_t)0;
+
+	xcb_res_client_id_value_iterator_t i = xcb_res_query_client_ids_ids_iterator(r);
+	for (; i.rem; xcb_res_client_id_value_next(&i)) {
+		spec = i.data->spec;
+		if (spec.mask & XCB_RES_CLIENT_ID_MASK_LOCAL_CLIENT_PID) {
+			uint32_t *t = xcb_res_client_id_value_value(i.data);
+			result = *t;
+			break;
+		}
+	}
+
+	free(r);
+	if (result == (pid_t)-1)
+		result = 0;
+
+	return result;
+}
+
+bool is_child_process(pid_t p, pid_t c)
+{
+	while (p != c && c != 0)
+		c = getparentprocess(c);
+
+	return (bool)c;
+}
+
+node_t* getparentterm(const monitor_t *m, const node_t *c)
+{
+	for (desktop_t *d = m->desk_head; d != NULL; d = d->next) {
+		for (node_t *p = d->root; p != NULL; p = next_node(p)) {
+			if (p->term && !p->swallowed && p->pid && is_child_process(p->pid, c->pid))
+			       return p;
+		}
+	}
+
+	return NULL;
 }

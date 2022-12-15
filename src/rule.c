@@ -450,6 +450,8 @@ void parse_key_value(char *key, char *value, rule_consequence_t *csq)
 		SETCSQ(manage)
 		SETCSQ(focus)
 		SETCSQ(border)
+		SETCSQ(term)
+		SETCSQ(noswallow)
 #undef SETCSQ
 	}
 }
